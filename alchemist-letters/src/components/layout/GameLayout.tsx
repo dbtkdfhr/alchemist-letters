@@ -7,10 +7,12 @@ import { LetterViewer } from '../letter/LetterViewer'
 import { AlchemyView } from '../alchemy/AlchemyView'
 import { LetterReply } from '../letter/LetterReply'
 import { AlchemyNote } from '../alchemy/AlchemyNote'
+import { EndingScreen } from './EndingScreen'
 import { useBGM } from '../../hooks/useBGM'
 
 export function GameLayout() {
   const gameStarted = useGameStore((s) => s.gameStarted)
+  const gameFinished = useGameStore((s) => s.gameFinished)
   const currentView = useUIStore((s) => s.currentView)
   const { startBGM, toggleBGM, isPlaying } = useBGM()
 
@@ -22,6 +24,11 @@ export function GameLayout() {
 
   if (!gameStarted) {
     return <TitleScreen />
+  }
+
+  // 게임 완료 시 엔딩 화면 표시
+  if (gameFinished && currentView !== 'letterbox' && currentView !== 'letter') {
+    return <EndingScreen />
   }
 
   return (

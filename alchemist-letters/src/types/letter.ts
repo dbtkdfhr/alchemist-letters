@@ -12,6 +12,7 @@ export interface ReplyOption {
   type: 'strict' | 'kind' | 'risky' | 'neutral'
   effects: CharacterEffects
   recipeRequired?: string
+  unlockConditions?: UnlockConditions
   replyText: string
 }
 
@@ -38,10 +39,19 @@ export interface Chapter {
     failure: ChapterOutcome
     disaster?: ChapterOutcome
   }
-  unlockConditions?: {
-    requiredAffection?: number
-    requiredConfidence?: number
-  }
+  unlockConditions?: UnlockConditions
+
+  /** 이 챕터의 편지를 읽은 후, 답장을 쓰기 위해 반드시 발견해야 하는 레시피 ID */
+  requiredRecipe?: string
+}
+
+export interface UnlockConditions {
+  minAffection?: number
+  maxAffection?: number
+  minConfidence?: number
+  maxConfidence?: number
+  minPastOpenness?: number
+  maxPastOpenness?: number
 }
 
 export interface LetterEntry {

@@ -4,6 +4,36 @@ import { LetterPaper } from './LetterPaper'
 import { useSound } from '../../hooks/useSound'
 import { useState } from 'react'
 
+type OutcomeType = 'success' | 'failure' | 'disaster'
+
+function determineOutcome(
+  option: NonNullable<ReturnType<typeof getChapterByIndex>>['replyOptions'][number],
+  state: ReturnType<typeof useGameStore.getState>
+): OutcomeType {
+  const { marcoAffection, marcoConfidence } = state
+
+  // If the option has bad negative effects, it could lead to disaster
+  const totalEffect = (option.effects.affection ?? 0) + (option.effects.confidence ?? 0)
+  if (totalEffect < -10) return 'disaster'
+
+  // If the player has high enough stats, any option succeeds
+  if (marcoAffection > 20 && marcoConfidence > 10) return 'success'
+
+  // Kind options tend to succeed when affection is high
+  if (option.type === 'kind' && marcoAffection > 0) return 'success'
+
+  // Strict options succeed when the player has decent confidence or affection is tanked
+  if (option.type === 'strict' && marcoConfidence > -5) return 'success'
+
+  // Risky options are more likely to fail
+  if (option.type === 'risky' && marcoAffection < 10) return 'failure'
+
+  // Neutral ground
+  if (totalEffect >= 0) return 'success'
+
+  return 'failure'
+}
+
 export function LetterReply() {
   const currentChapter = useGameStore((s) => s.currentChapter)
   const selectReply = useGameStore((s) => s.selectReply)
@@ -13,6 +43,7 @@ export function LetterReply() {
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
+  const [sentOutcome, setSentOutcome] = useState<OutcomeType | null>(null)
 
   const chapter = getChapterByIndex(currentChapter)
   if (!chapter) return null
@@ -26,16 +57,27 @@ export function LetterReply() {
     setIsSending(true)
     play('send')
 
+    // Apply stat changes
     selectReply(chapter.id, option.id, option.effects)
 
-    // 성공으로 간주 (프로토타입)
-    const outcome = chapter.result.success
+    // Determine outcome based on choice + current state
+    const state = useGameStore.getState()
+    const outcomeType = determineOutcome(option, state)
+    setSentOutcome(outcomeType)
+
+    // Pick the right outcome from chapter data
+    const outcome = chapter.result[outcomeType] ?? chapter.result.failure
 
     setTimeout(() => {
-      completeChapter(currentChapter, outcome)
+      completeChapter(currentChapter, outcome, outcomeType)
       setView('letterbox')
       setIsSending(false)
     }, 1500)
+  }
+
+  const handleReread = () => {
+    useGameStore.getState().goToPage(0)
+    setView('letter')
   }
 
   return (
@@ -91,10 +133,7 @@ export function LetterReply() {
       {/* 하단 액션 */}
       <div className="mt-6 flex gap-3">
         <button
-          onClick={() => {
-            useGameStore.getState().goToPage(0)
-            setView('letter')
-          }}
+          onClick={handleReread}
           className="
             px-4 py-3 rounded-lg font-ui text-sm text-ink-light/60
             hover:text-ink hover:bg-ink-light/5 transition-all duration-200
@@ -114,9 +153,23 @@ export function LetterReply() {
             }
           `}
         >
-          {isSending ? '편지를 보내는 중...' : '편지 보내기'}
+          {isSending
+            ? '편지를 보내는 중...'
+            : sentOutcome === 'failure'
+              ? '...다시 편지를 써야 할까요?'
+              : '편지 보내기'
+          }
         </button>
       </div>
+
+      {/* 결과 미리보기 힌트 */}
+      {selectedOption && !isSending && (
+        <div className="mt-4 text-center">
+          <span className="font-ui text-xs text-ink-light/40">
+            선택지는 마르코와의 관계와 수업의 방향에 영향을 줍니다.
+          </span>
+        </div>
+      )}
     </LetterPaper>
   )
 }

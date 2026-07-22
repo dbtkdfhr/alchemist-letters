@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useGameStore, useUIStore } from '../../store'
+import { useGameStore, useUIStore, useAlchemyStore } from '../../store'
 import { getChapterByIndex } from '../../data/chapters'
 import { LetterPaper } from './LetterPaper'
 import { useSound } from '../../hooks/useSound'
@@ -7,8 +7,10 @@ import { useSound } from '../../hooks/useSound'
 export function LetterViewer() {
   const currentChapter = useGameStore((s) => s.currentChapter)
   const currentPage = useGameStore((s) => s.currentPage)
-  const nextPage = useGameStore((s) => s.nextPage)
+  const completeChapter = useGameStore((s) => s.completeChapter)
+  const gameFinished = useGameStore((s) => s.gameFinished)
   const setView = useUIStore((s) => s.setView)
+  const isRecipeDiscovered = useAlchemyStore((s) => s.isRecipeDiscovered)
   const { play } = useSound()
 
   const [visible, setVisible] = useState(true)
@@ -19,19 +21,54 @@ export function LetterViewer() {
 
   const pages = chapter.letter.content
   const totalPages = pages.length
+  const isFirstPage = currentPage <= 0
   const isLastPage = currentPage >= totalPages - 1
+  const hasReplyOptions = chapter.replyOptions.length > 0
+
+  const recipeNotYetDiscovered =
+    hasReplyOptions &&
+    chapter.requiredRecipe != null &&
+    !isRecipeDiscovered(chapter.requiredRecipe)
+
+  const animateToPage = (targetPage: number) => {
+    if (animating) return
+    play('pageTurn')
+    setAnimating(true)
+    setVisible(false)
+    setTimeout(() => {
+      useGameStore.getState().goToPage(targetPage)
+      setVisible(true)
+      setTimeout(() => setAnimating(false), 100)
+    }, 200)
+  }
 
   const handleClick = () => {
     if (animating) return
     if (!isLastPage) {
-      play('pageTurn')
-      setAnimating(true)
-      setVisible(false)
-      setTimeout(() => {
-        nextPage()
-        setVisible(true)
-        setTimeout(() => setAnimating(false), 100)
-      }, 200)
+      animateToPage(currentPage + 1)
+    }
+  }
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!isFirstPage) {
+      animateToPage(currentPage - 1)
+    }
+  }
+
+  const handleNext = () => {
+    if (hasReplyOptions) {
+      if (recipeNotYetDiscovered) {
+        useAlchemyStore.getState().setReturnToLetter(true)
+        setView('alchemy')
+        return
+      }
+      setView('reply')
+      useGameStore.getState().goToPage(0)
+    } else {
+      const outcome = chapter.result.success ?? chapter.result.failure
+      completeChapter(currentChapter, outcome)
+      setView('letterbox')
     }
   }
 
@@ -43,7 +80,7 @@ export function LetterViewer() {
     <LetterPaper>
       <div className="mb-4 text-center">
         <span className="font-ui text-xs text-ink-light/60">
-          {chapter.letter.from === 'marco' ? '마르코가 보낸 편지' : '편지'}
+          {chapter.letter.from === 'marco' ? '마르코가 보낸 편지' : chapter.letter.from === 'memory' ? '기억 속 편지' : '편지'}
         </span>
       </div>
 
@@ -61,26 +98,56 @@ export function LetterViewer() {
       </div>
 
       <div className="mt-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {!isFirstPage && (
+            <button
+              className="font-ui text-xs text-ink-light/40 hover:text-ink-light/70 transition-colors"
+              onClick={handlePrev}
+            >
+              ← 이전
+            </button>
+          )}
+        </div>
+
         <span className="font-ui text-xs text-ink-light/50">
           {currentPage + 1} / {totalPages}
         </span>
-        {!isLastPage && (
-          <span className="font-ui text-xs text-ink-light/40 animate-pulse">
-            계속 읽으려면 클릭
-          </span>
-        )}
-        {isLastPage && (
-          <button
-            className="font-ui text-sm text-accent-brown hover:text-[#7A3B10] transition-colors"
-            onClick={(e) => {
-              e.stopPropagation()
-              setView('reply')
-              useGameStore.getState().goToPage(0)
-            }}
-          >
-            답장 쓰기 →
-          </button>
-        )}
+
+        <div className="flex items-center gap-3">
+          {!isLastPage && (
+            <button
+              className="font-ui text-xs text-ink-light/40 hover:text-ink-light/70 transition-colors"
+              onClick={() => animateToPage(currentPage + 1)}
+            >
+              다음 →
+            </button>
+          )}
+          {isLastPage && (
+            <div className="flex flex-col items-end gap-1">
+              {recipeNotYetDiscovered && (
+                <p className="font-ui text-xs text-ink-light/50 text-right leading-relaxed whitespace-nowrap">
+                  편지 속 단서를 바탕으로<br />연금술을 실험해보세요
+                </p>
+              )}
+              <button
+                className="font-ui text-sm text-accent-brown hover:text-[#7A3B10] transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleNext()
+                }}
+              >
+                {recipeNotYetDiscovered
+                  ? '실험하러 가기 →'
+                  : hasReplyOptions
+                    ? '답장 쓰기 →'
+                    : gameFinished
+                      ? '이야기 마무리 →'
+                      : '다음으로 →'
+                }
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </LetterPaper>
   )

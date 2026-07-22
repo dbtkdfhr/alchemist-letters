@@ -24,7 +24,10 @@ dist-ssr
 *.sw?
 
 # Platty
-.platty/
+.platty
+.omo
+.omo/*
+.playwright-mcp/
 
 # OS
 .DS_Store

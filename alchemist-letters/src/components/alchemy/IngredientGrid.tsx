@@ -4,6 +4,12 @@ import { useGameStore } from '../../store'
 import type { Ingredient } from '../../types'
 import { ATTRIBUTE_SYMBOLS, ATTRIBUTE_LABELS } from '../../types'
 
+const ICON_PATH = '/icons/'
+
+function getIngredientIcon(ingredient: Ingredient): string {
+  return `${ICON_PATH}${ingredient.id}.svg`
+}
+
 export function IngredientGrid() {
   const currentChapter = useGameStore((s) => s.currentChapter)
   const selectedSlots = useAlchemyStore((s) => s.selectedSlots)
@@ -35,9 +41,14 @@ export function IngredientGrid() {
                 }
               `}
             >
-              {/* 재료 아이콘 (임시 텍스트) */}
-              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-ink-light/10 to-ink-light/5 flex items-center justify-center">
-                <span className="font-ui text-lg">{getIngredientEmoji(ingredient)}</span>
+              {/* 재료 아이콘 (SVG) */}
+              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-ink-light/10 to-ink-light/5 flex items-center justify-center p-2">
+                <img
+                  src={getIngredientIcon(ingredient)}
+                  alt={ingredient.name}
+                  className="w-full h-full object-contain opacity-80"
+                  loading="lazy"
+                />
               </div>
 
               <div className="font-handwriting text-sm text-ink leading-tight mb-1">
@@ -62,18 +73,4 @@ export function IngredientGrid() {
       </div>
     </div>
   )
-}
-
-function getIngredientEmoji(ingredient: Ingredient): string {
-  const emojiMap: Record<string, string> = {
-    moon_moss: '🌿',
-    fire_bloom: '🌺',
-    silver_herb: '🌾',
-    crystal_powder: '💎',
-    purified_water: '💧',
-    moon_oil: '🫒',
-    shadow_mushroom: '🍄',
-    iron_powder: '⛓️',
-  }
-  return emojiMap[ingredient.id] ?? '🧪'
 }

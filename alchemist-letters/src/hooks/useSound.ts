@@ -1,8 +1,32 @@
 import { useCallback } from 'react'
 
-type SoundType = 'pageTurn' | 'letterArrive' | 'combineSuccess' | 'combineFail' | 'explosion' | 'send' | 'click'
+export type SoundType = 'pageTurn' | 'letterArrive' | 'combineSuccess' | 'combineFail' | 'explosion' | 'send' | 'click'
 
-// Web Audio API로 간단한 SFX 생성 (프로토타입용)
+// Try to load real audio file, fall back to Web Audio API synthesis
+const audioCache = new Map<string, HTMLAudioElement>()
+
+function preloadSound(name: string): HTMLAudioElement | null {
+  if (audioCache.has(name)) return audioCache.get(name) ?? null
+  const audio = new Audio(`/sounds/${name}.mp3`)
+  audio.preload = 'auto'
+  audioCache.set(name, audio)
+  return audio
+}
+
+function playAudioFile(name: string, volume = 0.5): boolean {
+  try {
+    const audio = preloadSound(name)
+    if (!audio) return false
+    const clone = audio.cloneNode() as HTMLAudioElement
+    clone.volume = volume
+    clone.play().catch(() => {}) // Ignore play() failures — will use synth fallback
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Web Audio API synthesis fallback
 function createAudioContext(): AudioContext | null {
   try {
     return new (window.AudioContext || (window as any).webkitAudioContext)()
@@ -11,13 +35,7 @@ function createAudioContext(): AudioContext | null {
   }
 }
 
-function playTone(
-  ctx: AudioContext,
-  frequency: number,
-  duration: number,
-  type: OscillatorType = 'sine',
-  volume = 0.15
-) {
+function playTone(ctx: AudioContext, frequency: number, duration: number, type: OscillatorType = 'sine', volume = 0.15) {
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
   osc.type = type
@@ -47,60 +65,70 @@ function playNoise(ctx: AudioContext, duration: number, volume = 0.05) {
   source.start()
 }
 
-function playSounds(sounds: SoundType[]) {
+function playSynthSounds(sounds: SoundType[]) {
   const ctx = createAudioContext()
   if (!ctx) return
 
   sounds.forEach((sound) => {
     switch (sound) {
       case 'pageTurn':
-        // 종이 넘기는 소리 (짧은 노이즈)
         playNoise(ctx, 0.15, 0.03)
         playTone(ctx, 800, 0.05, 'sine', 0.02)
         break
-
       case 'letterArrive':
-        // 편지 도착 (두근)
         playTone(ctx, 440, 0.15, 'sine', 0.1)
         setTimeout(() => playTone(ctx, 554, 0.2, 'sine', 0.1), 100)
         break
-
       case 'combineSuccess':
-        // 조합 성공 ('칭')
         playTone(ctx, 523, 0.1, 'sine', 0.12)
         setTimeout(() => playTone(ctx, 659, 0.1, 'sine', 0.1), 80)
         setTimeout(() => playTone(ctx, 784, 0.15, 'sine', 0.08), 160)
         break
-
       case 'combineFail':
-        // 조합 실패 ('푸')
         playTone(ctx, 200, 0.2, 'sawtooth', 0.05)
         playNoise(ctx, 0.15, 0.03)
         break
-
       case 'explosion':
-        // 폭발 ('펑')
         playNoise(ctx, 0.3, 0.08)
         playTone(ctx, 100, 0.3, 'sawtooth', 0.06)
         break
-
       case 'send':
-        // 편지 보내기 (봉투 봉함)
         playTone(ctx, 350, 0.1, 'triangle', 0.08)
         setTimeout(() => playTone(ctx, 400, 0.08, 'triangle', 0.06), 80)
         break
-
       case 'click':
-        // 버튼 클릭 ('딸깍')
         playTone(ctx, 600, 0.03, 'sine', 0.05)
         break
     }
   })
 }
 
+// Map of sound names to their audio file names
+const SOUND_FILES: Record<SoundType, { file: string; volume: number } | null> = {
+  pageTurn: null,        // null = use synth
+  letterArrive: null,
+  combineSuccess: null,
+  combineFail: null,
+  explosion: null,
+  send: null,
+  click: null,
+}
+
 export function useSound() {
   const play = useCallback((...sounds: SoundType[]) => {
-    playSounds(sounds)
+    // Try real audio files first
+    const needsSynth: SoundType[] = []
+    for (const sound of sounds) {
+      const config = SOUND_FILES[sound]
+      if (config && playAudioFile(config.file, config.volume)) {
+        continue // Played real audio
+      }
+      needsSynth.push(sound)
+    }
+    // Fallback to synthesis for sounds without real files
+    if (needsSynth.length > 0) {
+      playSynthSounds(needsSynth)
+    }
   }, [])
 
   return { play }
