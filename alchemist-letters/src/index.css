@@ -1,0 +1,85 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #F5F0E8;
+    color: #3A2A1A;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #root {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+@layer components {
+  /* 종이 질감 배경 */
+  .paper-bg {
+    background: linear-gradient(135deg, #F5F0E8 0%, #EDE5D8 50%, #F5F0E8 100%);
+  }
+
+  .letter-bg {
+    background: linear-gradient(135deg, #FAF5EB 0%, #F5EDE0 50%, #FAF5EB 100%);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  /* 잉크 번짐 효과 (테두리) */
+  .ink-border {
+    border: 2px solid #3A2A1A;
+    border-image: radial-gradient(ellipse at center, #3A2A1A 0%, transparent 70%) 1;
+    position: relative;
+  }
+
+  .ink-border::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 1px solid rgba(58, 42, 26, 0.15);
+    border-radius: 2px;
+    pointer-events: none;
+  }
+
+  /* 페이지 전환 애니메이션 */
+  .page-enter {
+    animation: pageEnter 0.6s ease-out;
+  }
+
+  @keyframes pageEnter {
+    0% {
+      opacity: 0;
+      transform: rotateX(-8deg) translateY(15px);
+    }
+    100% {
+      opacity: 1;
+      transform: rotateX(0) translateY(0);
+    }
+  }
+
+  /* 편지지 테두리 장식 */
+  .letter-border {
+    position: relative;
+  }
+
+  .letter-border::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid rgba(58, 42, 26, 0.08);
+    pointer-events: none;
+  }
+}
