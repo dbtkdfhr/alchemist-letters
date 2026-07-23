@@ -12,15 +12,15 @@ export function AlchemySlots() {
   const lastResult = useAlchemyStore((s) => s.lastResult);
   const returnToLetter = useAlchemyStore((s) => s.returnToLetter);
   const setReturnToLetter = useAlchemyStore((s) => s.setReturnToLetter);
+  const hasAttempted = useAlchemyStore((s) => s.hasAttempted);
   const currentChapter = useGameStore((s) => s.currentChapter);
   const setView = useUIStore((s) => s.setView);
   const { play } = useSound();
 
   const discoveredRequiredRecipeForLetter =
     returnToLetter &&
-    lastResult?.isNew &&
-    (lastResult.result.grade === 'success' ||
-      lastResult.result.grade === 'perfect') &&
+    lastResult != null &&
+    hasAttempted(selectedSlots) &&
     (() => {
       const chapter = getChapterByIndex(currentChapter);
       if (!chapter?.requiredRecipe) return false;

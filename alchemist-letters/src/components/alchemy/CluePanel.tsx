@@ -3,13 +3,13 @@ import { getChapterByIndex } from '../../data/chapters';
 
 export function CluePanel() {
   const currentChapter = useGameStore((s) => s.currentChapter);
-  const isClueRevealed = useAlchemyStore((s) => s.isClueRevealed);
+  const revealedClues = useAlchemyStore((s) => s.revealedClues);
 
   const chapter = getChapterByIndex(currentChapter);
   const clues = chapter?.clues;
   if (!clues || clues.length === 0) return null;
 
-  const allRevealed = clues.every((c) => isClueRevealed(c.id));
+  const allRevealed = clues.every((c) => revealedClues.includes(c.id));
 
   return (
     <div className='mt-6'>
@@ -23,7 +23,7 @@ export function CluePanel() {
       </h3>
       <div className='space-y-2'>
         {clues.map((clue) => {
-          const revealed = isClueRevealed(clue.id);
+          const revealed = revealedClues.includes(clue.id);
 
           return (
             <div

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useGameStore, useUIStore } from '../../store'
+import { useGameStore, useAlchemyStore, useUIStore } from '../../store'
 import { getChapter } from '../../data/chapters'
 
 export function LetterBox() {
@@ -9,6 +9,7 @@ export function LetterBox() {
   const gameFinished = useGameStore((s) => s.gameFinished)
   const lastOutcome = useGameStore((s) => s.lastOutcome)
   const setView = useUIStore((s) => s.setView)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
@@ -140,6 +141,51 @@ export function LetterBox() {
             마지막 결과: {lastOutcome === 'success' ? '성공' : lastOutcome === 'failure' ? '실패' : '대실패'}
           </p>
         )}
+
+        {/* 새로 시작하기 */}
+        <div className="mt-8 pt-6 border-t border-ink-light/10">
+          {!showResetConfirm ? (
+            <button
+              onClick={() => setShowResetConfirm(true)}
+              className="font-ui text-xs text-ink-light/40 hover:text-accent-brown transition-colors duration-200 underline underline-offset-4 decoration-ink-light/20 hover:decoration-accent-brown/40"
+            >
+              이야기 새로 시작하기
+            </button>
+          ) : (
+            <div className="flex flex-col items-center gap-3">
+              <p className="font-ui text-sm text-accent-brown/80">
+                모든 진행 상황이 사라집니다. 계속하시겠습니까?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    useGameStore.getState().resetGame()
+                    useAlchemyStore.setState({
+                      selectedSlots: [],
+                      attemptedCombos: [],
+                      discoveredRecipes: {},
+                      lastResult: null,
+                      unlockedIngredients: [],
+                      revealedClues: [],
+                      returnToLetter: false,
+                    })
+                    setShowResetConfirm(false)
+                    setView('title')
+                  }}
+                  className="font-ui text-sm px-4 py-2 rounded-sm bg-accent-brown/10 text-accent-brown hover:bg-accent-brown/20 transition-colors"
+                >
+                  네, 새로 시작할게요
+                </button>
+                <button
+                  onClick={() => setShowResetConfirm(false)}
+                  className="font-ui text-sm px-4 py-2 rounded-sm bg-ink-light/5 text-ink-light/50 hover:bg-ink-light/10 transition-colors"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

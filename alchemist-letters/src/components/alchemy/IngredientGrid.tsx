@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useAlchemyStore, useGameStore } from '../../store'
 import { getChapterByIndex } from '../../data/chapters'
 import type { Ingredient } from '../../types'
@@ -16,21 +16,27 @@ export function IngredientGrid() {
   const selectIngredient = useAlchemyStore((s) => s.selectIngredient)
   const isIngredientUnlocked = useAlchemyStore((s) => s.isIngredientUnlocked)
   const revealClue = useAlchemyStore((s) => s.revealClue)
-  const isClueRevealed = useAlchemyStore((s) => s.isClueRevealed)
+  const revealedClues = useAlchemyStore((s) => s.revealedClues)
   const getAvailableIngredients = useAlchemyStore((s) => s.getAvailableIngredients)
+
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
 
   const available = getAvailableIngredients(currentChapter + 1)
   const chapter = getChapterByIndex(currentChapter)
 
+  const handleImageError = useCallback((id: string) => {
+    setFailedImages((prev) => new Set(prev).add(id))
+  }, [])
+
   const handleInspect = useCallback((ingredientId: string) => {
     if (!chapter?.clues) return
     const clueToReveal = chapter.clues.find(
-      (c) => c.inspectIngredient === ingredientId && !isClueRevealed(c.id)
+      (c) => c.inspectIngredient === ingredientId && !revealedClues.includes(c.id)
     )
     if (clueToReveal) {
       revealClue(clueToReveal.id)
     }
-  }, [chapter, isClueRevealed, revealClue])
+  }, [chapter, revealedClues, revealClue])
 
   return (
     <div>
@@ -42,7 +48,7 @@ export function IngredientGrid() {
           const isDisabled = isSelected || (isMaxSlots && !isSelected)
           const unlocked = isIngredientUnlocked(ingredient.id)
           const hasClue = chapter?.clues?.some(
-            (c) => c.inspectIngredient === ingredient.id && !isClueRevealed(c.id)
+            (c) => c.inspectIngredient === ingredient.id && !revealedClues.includes(c.id)
           )
 
           if (!unlocked) {
@@ -90,13 +96,21 @@ export function IngredientGrid() {
                   ?
                 </button>
               )}
-              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-ink-light/10 to-ink-light/5 flex items-center justify-center p-2">
-                <img
-                  src={getIngredientIcon(ingredient)}
-                  alt={ingredient.name}
-                  className="w-full h-full object-contain opacity-80"
-                  loading="lazy"
-                />
+              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-br from-ink-light/10 to-ink-light/5 flex items-center justify-center p-1">
+                {failedImages.has(ingredient.id) ? (
+                  <span className="text-xs leading-none text-ink-light/60">
+                    {ingredient.mainAttributes.map((a) => ATTRIBUTE_SYMBOLS[a]).join('')}
+                    {ingredient.subAttribute ? ATTRIBUTE_SYMBOLS[ingredient.subAttribute] : ''}
+                  </span>
+                ) : (
+                  <img
+                    src={getIngredientIcon(ingredient)}
+                    alt={ingredient.name}
+                    className="w-full h-full object-contain opacity-80"
+                    loading="lazy"
+                    onError={() => handleImageError(ingredient.id)}
+                  />
+                )}
               </div>
 
               <div className="font-handwriting text-sm text-ink leading-tight mb-1">

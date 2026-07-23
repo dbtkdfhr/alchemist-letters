@@ -210,7 +210,7 @@ export const INGREDIENTS: Ingredient[] = [
     category: 'special',
     mainAttributes: ['vita', 'glacies'],
     rarity: 'rare',
-    unlockChapter: 15,
+    unlockChapter: 13,
   },
 ]
 

@@ -214,12 +214,12 @@ export const RECIPES: Recipe[] = [
   {
     id: 'void_transformation',
     name: '공허 변환제',
-    ingredients: ['void_crystal', 'dark_essence'],
+    ingredients: ['void_crystal', 'golden_nectar', 'starlight_drop'],
     result: {
-      effect: '속성 변환', grade: 'success',
-      description: '공허 수정이 어둠의 진액을 흡수하여 모든 속성을 변환한다.', potency: 9,
+      effect: '공허 변환', grade: 'success',
+      description: '별빛과 황금 화밀이 공허 수정과 융합하여 균열을 봉인하고 상처를 치유로 변환한다.', potency: 9,
     },
-    attributeMatch: { primary: ['spiritus', 'mortis'] },
+    attributeMatch: { primary: ['spiritus', 'vita'] },
   },
   {
     id: 'primordial_life',
