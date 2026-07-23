@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { IngredientGrid } from './IngredientGrid'
 import { AlchemySlots } from './AlchemySlots'
+import { CluePanel } from './CluePanel'
 import { useAlchemyStore, useUIStore, useGameStore } from '../../store'
 
 export function AlchemyView() {
@@ -25,6 +26,9 @@ export function AlchemyView() {
 
       {/* 조합 슬롯 */}
       <AlchemySlots />
+
+      {/* 단서 패널 */}
+      <CluePanel />
 
       {/* 편지 다시보기 */}
       {returnToLetter && (

@@ -85,16 +85,22 @@ export function LetterViewer() {
       </div>
 
       <div
-        className={`
-          flex-1 flex flex-col justify-center cursor-pointer
-          transition-all duration-300 ease-out
-          ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
-        `}
+        className="flex-1 flex flex-col justify-center cursor-pointer gap-3"
         onClick={handleClick}
       >
-        <div className="font-handwriting text-lg md:text-xl text-ink leading-relaxed whitespace-pre-line">
-          {pages[currentPage]}
-        </div>
+        {pages[currentPage].split(/\n{2,}/).filter(Boolean).map((block, i) => (
+          <div
+            key={`${currentPage}-${i}`}
+            className={`
+              font-handwriting text-lg md:text-xl text-ink leading-relaxed whitespace-pre-line
+              transition-all duration-500 ease-out
+              ${visible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-6 scale-95'}
+            `}
+            style={{ transitionDelay: visible ? `${i * 120}ms` : '0ms' }}
+          >
+            {block}
+          </div>
+        ))}
       </div>
 
       <div className="mt-6 flex items-center justify-between">

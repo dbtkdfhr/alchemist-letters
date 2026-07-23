@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useGameStore, useUIStore } from '../../store'
 import { getChapter } from '../../data/chapters'
 
@@ -8,6 +9,9 @@ export function LetterBox() {
   const gameFinished = useGameStore((s) => s.gameFinished)
   const lastOutcome = useGameStore((s) => s.lastOutcome)
   const setView = useUIStore((s) => s.setView)
+
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
 
   // Collect all unlocked chapters with data
   const chapters = unlockedLetters
@@ -21,6 +25,8 @@ export function LetterBox() {
 
   const pendingCount = chapters.filter((c) => !readLetters.includes(c.id)).length
   const isAllRead = pendingCount === 0 && chapters.length > 0
+
+  const unreadEntries = chapters.filter((c) => !readLetters.includes(c.id))
 
   return (
     <div className="flex-1 max-w-lg mx-auto w-full px-4 py-8">
@@ -36,6 +42,7 @@ export function LetterBox() {
           const isRead = readLetters.includes(id)
           const isReplied = id in sentReplies
           const isCurrentUnread = !isRead
+          const unreadIndex = isCurrentUnread ? unreadEntries.findIndex((e) => e.id === id) : -1
 
           return (
             <div
@@ -49,11 +56,22 @@ export function LetterBox() {
               }}
               className={`
                 letter-bg rounded-sm p-4 cursor-pointer
-                transition-all duration-200
-                hover:shadow-lg hover:-translate-y-0.5
+                transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5
                 border ${isCurrentUnread ? 'border-accent-brown/30' : 'border-ink-light/10'}
                 ${isCurrentUnread ? 'bg-accent-brown/[0.02]' : ''}
+                ${isCurrentUnread
+                  ? 'transition-all duration-500 ease-out'
+                  : ''
+                }
               `}
+              style={isCurrentUnread && !mounted ? {
+                transform: 'translateX(100%)',
+                opacity: 0,
+              } : isCurrentUnread && mounted ? {
+                transform: 'translateX(0)',
+                opacity: 1,
+                transitionDelay: `${unreadIndex * 200}ms`,
+              } : undefined}
             >
               <div className="flex items-start gap-4">
                 {/* 봉투 아이콘 */}

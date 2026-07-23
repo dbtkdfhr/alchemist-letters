@@ -15,6 +15,8 @@ export interface Ingredient {
   subAttribute?: Attribute
   rarity: Rarity
   unlockChapter: number
+  /** 이 레시피를 발견해야 재료가 해금됨 */
+  unlockRecipe?: string
 }
 
 export interface RecipeResult {

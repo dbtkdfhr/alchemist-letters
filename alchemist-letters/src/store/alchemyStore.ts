@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { RecipeResult, RecipeEntry } from '../types'
 import { evaluateCombo, getComboKey } from '../utils/alchemy'
 import { getIngredient, INGREDIENTS } from '../data/ingredients'
-import { getRecipe } from '../data/recipes'
+import { getRecipe, findRecipeByIngredients } from '../data/recipes'
 
 interface AlchemyState {
   selectedSlots: string[]  // 선택된 재료 ID (최대 3개)
@@ -11,6 +11,11 @@ interface AlchemyState {
   discoveredRecipes: Record<string, RecipeEntry>
   lastResult: { result: RecipeResult; isNew: boolean } | null
   returnToLetter: boolean  // 편지 읽기 → 실험하러 오기 플래그
+
+  /** 플레이어가 획득한 재료 ID 목록 (레시피 발견으로 해금됨) */
+  unlockedIngredients: string[]
+  /** 해금된 단서 ID 목록 (재료 관찰로 해금됨) */
+  revealedClues: string[]
 
   selectIngredient: (id: string) => void
   removeIngredient: (index: number) => void
@@ -22,6 +27,10 @@ interface AlchemyState {
   hasAttempted: (ids: string[]) => boolean
   isRecipeDiscovered: (recipeId: string) => boolean
   setReturnToLetter: (v: boolean) => void
+  isIngredientUnlocked: (id: string) => boolean
+  isClueRevealed: (clueId: string) => boolean
+  revealClue: (clueId: string) => void
+  getAvailableIngredients: (currentChapter: number) => typeof INGREDIENTS
 }
 
 export const useAlchemyStore = create<AlchemyState>()(
@@ -31,6 +40,8 @@ export const useAlchemyStore = create<AlchemyState>()(
       attemptedCombos: [],
       discoveredRecipes: {},
       lastResult: null,
+      unlockedIngredients: [],
+      revealedClues: [],
 
       selectIngredient: (id) => {
         const state = get()
@@ -82,6 +93,20 @@ export const useAlchemyStore = create<AlchemyState>()(
               ...state.discoveredRecipes,
               [recipeId]: newRecipe,
             }
+
+            const sorted = [...state.selectedSlots].sort()
+            const canonical = findRecipeByIngredients(sorted)
+            if (canonical) {
+              const newlyUnlocked = INGREDIENTS
+                .filter((ing) => ing.unlockRecipe === canonical.id)
+                .filter((ing) => !state.unlockedIngredients.includes(ing.id))
+              if (newlyUnlocked.length > 0) {
+                updates.unlockedIngredients = [
+                  ...state.unlockedIngredients,
+                  ...newlyUnlocked.map((ing) => ing.id),
+                ]
+              }
+            }
           }
 
           set(updates)
@@ -122,12 +147,40 @@ export const useAlchemyStore = create<AlchemyState>()(
       returnToLetter: false,
 
       setReturnToLetter: (v) => set({ returnToLetter: v }),
+
+      isIngredientUnlocked: (id) => {
+        const ing = getIngredient(id)
+        if (!ing) return false
+        if (!ing.unlockRecipe) return true // 항상 해금된 재료
+        return get().unlockedIngredients.includes(id)
+      },
+
+      isClueRevealed: (clueId) => {
+        return get().revealedClues.includes(clueId)
+      },
+
+      revealClue: (clueId) => {
+        const state = get()
+        if (state.revealedClues.includes(clueId)) return
+        set({ revealedClues: [...state.revealedClues, clueId] })
+      },
+
+      getAvailableIngredients: (currentChapter) => {
+        const state = get()
+        return INGREDIENTS.filter((ing) => {
+          if (ing.unlockChapter > currentChapter) return false
+          if (ing.unlockRecipe) return state.unlockedIngredients.includes(ing.id)
+          return true
+        })
+      },
     }),
     {
       name: 'alchemist-alchemy',
       partialize: (state) => ({
         attemptedCombos: state.attemptedCombos,
         discoveredRecipes: state.discoveredRecipes,
+        unlockedIngredients: state.unlockedIngredients,
+        revealedClues: state.revealedClues,
       }),
     }
   )

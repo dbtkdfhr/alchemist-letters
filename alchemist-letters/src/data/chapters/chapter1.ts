@@ -15,6 +15,22 @@ export const chapter1: Chapter = {
   symptoms: '손바닥 화상 — 열(🔥)이 과다한 상태. 불꽃꽃(🔥)을 발라 오히려 악화시킴.',
   requiredEffects: ['냉각', '치유'],
   requiredRecipe: 'soothing_ointment',
+  clues: [
+    {
+      id: 'ch01_clue_burn',
+      title: '화상 처치 필기',
+      blurredText: '불꽃을... 가한다... 악화... 찬기를...',
+      clearText: '불꽃은 화상에 극약. 찬기로 식히고 생명력으로 재생할 것.',
+      inspectIngredient: 'moon_moss',
+    },
+    {
+      id: 'ch01_clue_herb',
+      title: '약초 메모',
+      blurredText: '은빛... 상처를... 달인...',
+      clearText: '은빛 허브는 지혈과 재생에 으뜸. 달여 먹이거나 갈아 바를 것.',
+      inspectIngredient: 'silver_herb',
+    },
+  ],
   replyOptions: [
     {
       id: 'a',

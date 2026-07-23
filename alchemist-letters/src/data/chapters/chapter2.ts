@@ -16,6 +16,15 @@ export const chapter2: Chapter = {
   symptoms: '불면증 — ❄️(냉) 기운은 부족하지 않지만 ⚡(기)가 불안정하게 흩어져 있음. 진정과 균형이 필요.',
   requiredEffects: ['진정', '균형'],
   requiredRecipe: 'sleep_potion',
+  clues: [
+    {
+      id: 'ch02_clue_sleep',
+      title: '불면증 처방 쪽지',
+      blurredText: '달빛 아래서... 우려내어... 기운을... 마음을...',
+      clearText: '달빛 이끼와 수정 가루를 달빛 아래서 함께 우려내어 차로 만들 것. 진정과 균형을 한 번에.',
+      inspectIngredient: 'moon_moss',
+    },
+  ],
   replyOptions: [
     {
       id: 'a',

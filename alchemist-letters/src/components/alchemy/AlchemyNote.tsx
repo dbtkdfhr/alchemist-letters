@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useAlchemyStore } from '../../store'
+import { useAlchemyStore, useGameStore } from '../../store'
 import { getIngredient } from '../../data/ingredients'
 import { RECIPES } from '../../data/recipes'
+import { getChapter as getChapterData } from '../../data/chapters'
 import { ATTRIBUTE_SYMBOLS, ATTRIBUTE_LABELS } from '../../types'
 import type { RecipeGrade } from '../../types'
 
-type NoteTab = 'recipes' | 'ingredients'
+type NoteTab = 'recipes' | 'ingredients' | 'branch'
 
 const gradeLabels: Record<RecipeGrade, string> = {
   perfect: '완벽',
@@ -27,6 +28,12 @@ export function AlchemyNote() {
   const [tab, setTab] = useState<NoteTab>('recipes')
   const discoveredRecipes = useAlchemyStore((s) => s.discoveredRecipes)
   const renameRecipe = useAlchemyStore((s) => s.renameRecipe)
+  const completedChapters = useGameStore((s) => s.completedChapters)
+  const currentChapter = useGameStore((s) => s.currentChapter)
+  const sentReplies = useGameStore((s) => s.sentReplies)
+  const lastOutcome = useGameStore((s) => s.lastOutcome)
+  const unlockedLetters = useGameStore((s) => s.unlockedLetters)
+  const readLetters = useGameStore((s) => s.readLetters)
   const [renaming, setRenaming] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
 
@@ -63,6 +70,18 @@ export function AlchemyNote() {
           `}
         >
           재료 도감
+        </button>
+        <button
+          onClick={() => setTab('branch')}
+          className={`
+            flex-1 py-2 rounded-md font-ui text-sm transition-all
+            ${tab === 'branch'
+              ? 'bg-white shadow-sm text-ink font-medium'
+              : 'text-ink-light/60 hover:text-ink'
+            }
+          `}
+        >
+          분기
         </button>
       </div>
 
@@ -171,32 +190,133 @@ export function AlchemyNote() {
         </div>
       )}
 
+      {tab === 'branch' && (
+        <div className="space-y-1">
+          {unlockedLetters.map((id) => {
+            const ch = getChapterData(id)
+            if (!ch) return null
+            const chIdx = parseInt(id.replace('ch', '')) - 1
+            const isCompleted = completedChapters.includes(chIdx)
+            const isCurrent = currentChapter === chIdx
+            const isRead = readLetters.includes(id)
+            const outcome = sentReplies[id] ? lastOutcome : null
+
+            return (
+              <div key={id} className="flex items-stretch gap-3">
+                <div className="flex flex-col items-center w-6 flex-shrink-0">
+                  <div className={`
+                    w-3 h-3 rounded-full mt-1.5 border-2
+                    ${isCompleted
+                      ? outcome === 'success'
+                        ? 'bg-accent-success border-accent-success'
+                        : outcome === 'disaster'
+                          ? 'bg-accent-danger border-accent-danger'
+                          : 'bg-accent-gold border-accent-gold'
+                      : isCurrent
+                        ? 'bg-accent-brown border-accent-brown animate-pulse'
+                        : isRead
+                          ? 'bg-ink-light/30 border-ink-light/30'
+                          : 'bg-white border-ink-light/20'
+                    }
+                  `} />
+                  <div className="w-px flex-1 bg-ink-light/10" />
+                </div>
+
+                <div className={`
+                  flex-1 p-3 rounded-lg border mb-1
+                  ${isCurrent
+                    ? 'border-accent-brown/30 bg-accent-brown/5'
+                    : isCompleted
+                      ? 'border-ink-light/10 bg-white/50'
+                      : isRead
+                        ? 'border-ink-light/5 bg-white/30'
+                        : 'border-dashed border-ink-light/5 bg-ink-light/[0.02]'
+                  }
+                `}>
+                  <div className="flex items-center justify-between">
+                    <span className={`
+                      font-handwriting text-sm
+                      ${isCompleted || isCurrent ? 'text-ink' : 'text-ink-light/40'}
+                    `}>
+                      {ch.title}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {isCompleted && outcome && (
+                        <span className={`
+                          font-ui text-[10px] px-1.5 py-0.5 rounded
+                          ${outcome === 'success'
+                            ? 'text-accent-success bg-accent-success/10'
+                            : outcome === 'disaster'
+                              ? 'text-accent-danger bg-accent-danger/10'
+                              : 'text-accent-gold bg-accent-gold/10'
+                          }
+                        `}>
+                          {outcome === 'success' ? '성공' : outcome === 'disaster' ? '대실패' : '실패'}
+                        </span>
+                      )}
+                      {isCurrent && (
+                        <span className="font-ui text-[10px] text-accent-brown bg-accent-brown/10 px-1.5 py-0.5 rounded">
+                          현재
+                        </span>
+                      )}
+                      {!isRead && (
+                        <span className="font-ui text-[10px] text-ink-light/30 px-1.5 py-0.5 rounded bg-ink-light/5">
+                          new
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {/* 재료 도감 탭 */}
       {tab === 'ingredients' && (
         <div className="grid grid-cols-2 gap-3">
-          {useAlchemyStore.getState().getAllIngredients().map((ing) => (
-            <div
-              key={ing.id}
-              className="p-3 rounded-lg border border-ink-light/10 bg-white/50"
-            >
-              <div className="font-handwriting text-sm text-ink mb-1">{ing.name}</div>
-              <div className="font-ui text-xs text-ink-light/60 mb-2 leading-relaxed">
-                {ing.description}
-              </div>
-              <div className="flex gap-1">
-                {ing.mainAttributes.map((attr) => (
-                  <span key={attr} className="text-xs" title={ATTRIBUTE_LABELS[attr]}>
-                    {ATTRIBUTE_SYMBOLS[attr]}
-                  </span>
-                ))}
-                {ing.subAttribute && (
-                  <span className="text-xs opacity-60" title={ATTRIBUTE_LABELS[ing.subAttribute]}>
-                    {ATTRIBUTE_SYMBOLS[ing.subAttribute]}
-                  </span>
+          {useAlchemyStore.getState().getAllIngredients().map((ing) => {
+            const unlocked = useAlchemyStore.getState().isIngredientUnlocked(ing.id)
+            return (
+              <div
+                key={ing.id}
+                className={`
+                  p-3 rounded-lg border transition-all
+                  ${unlocked
+                    ? 'border-ink-light/10 bg-white/50'
+                    : 'border-dashed border-ink-light/5 bg-ink-light/[0.02]'
+                  }
+                `}
+              >
+                {unlocked ? (
+                  <>
+                    <div className="font-handwriting text-sm text-ink mb-1">{ing.name}</div>
+                    <div className="font-ui text-xs text-ink-light/60 mb-2 leading-relaxed">
+                      {ing.description}
+                    </div>
+                    <div className="flex gap-1">
+                      {ing.mainAttributes.map((attr) => (
+                        <span key={attr} className="text-xs" title={ATTRIBUTE_LABELS[attr]}>
+                          {ATTRIBUTE_SYMBOLS[attr]}
+                        </span>
+                      ))}
+                      {ing.subAttribute && (
+                        <span className="text-xs opacity-60" title={ATTRIBUTE_LABELS[ing.subAttribute]}>
+                          {ATTRIBUTE_SYMBOLS[ing.subAttribute]}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-2">
+                    <div className="font-handwriting text-sm text-ink-light/30 mb-1">???</div>
+                    <div className="font-ui text-xs text-ink-light/20">미발견 재료</div>
+                  </div>
                 )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
