@@ -31,7 +31,7 @@ export function AlchemyNote() {
   const completedChapters = useGameStore((s) => s.completedChapters)
   const currentChapter = useGameStore((s) => s.currentChapter)
   const sentReplies = useGameStore((s) => s.sentReplies)
-  const lastOutcome = useGameStore((s) => s.lastOutcome)
+  const chapterOutcomes = useGameStore((s) => s.chapterOutcomes)
   const unlockedLetters = useGameStore((s) => s.unlockedLetters)
   const readLetters = useGameStore((s) => s.readLetters)
   const [renaming, setRenaming] = useState<string | null>(null)
@@ -199,7 +199,7 @@ export function AlchemyNote() {
             const isCompleted = completedChapters.includes(chIdx)
             const isCurrent = currentChapter === chIdx
             const isRead = readLetters.includes(id)
-            const outcome = sentReplies[id] ? lastOutcome : null
+            const outcome = chapterOutcomes[id] ?? null
 
             return (
               <div key={id} className="flex items-stretch gap-3">

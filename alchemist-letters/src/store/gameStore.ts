@@ -6,6 +6,8 @@ import { applyEffects, createInitialSaveData, CHAPTER_COUNT } from '../utils/sto
 
 export type Ending = 'independence' | 'bittersweet' | 'tragedy' | null
 
+export type OutcomeType = 'success' | 'failure' | 'disaster'
+
 interface GameState {
   currentChapter: number
   completedChapters: number[]
@@ -21,7 +23,8 @@ interface GameState {
   gameStarted: boolean
   gameFinished: boolean
   ending: Ending
-  lastOutcome: 'success' | 'failure' | 'disaster' | null
+  lastOutcome: OutcomeType | null
+  chapterOutcomes: Record<string, OutcomeType>
 
   startNewGame: () => void
   nextPage: () => void
@@ -42,9 +45,10 @@ export const useGameStore = create<GameState>()(
       gameFinished: false,
       ending: null,
       lastOutcome: null,
+      chapterOutcomes: {},
 
       startNewGame: () => {
-        set({ ...createInitialSaveData(), gameStarted: true, gameFinished: false, ending: null, lastOutcome: null })
+        set({ ...createInitialSaveData(), gameStarted: true, gameFinished: false, ending: null, lastOutcome: null, chapterOutcomes: {} })
       },
 
       nextPage: () => {
@@ -115,6 +119,7 @@ export const useGameStore = create<GameState>()(
           marcoConfidence: newState.marcoConfidence,
           pastOpenness: newState.pastOpenness,
           lastOutcome: outcomeType,
+          chapterOutcomes: { ...state.chapterOutcomes, [chapter.id]: outcomeType },
           unlockedLetters: [
             ...new Set([...state.unlockedLetters, ...unlocked, nextChapterId].filter(Boolean))
           ],
@@ -159,6 +164,7 @@ export const useGameStore = create<GameState>()(
         gameFinished: state.gameFinished,
         ending: state.ending,
         lastOutcome: state.lastOutcome,
+        chapterOutcomes: state.chapterOutcomes,
         currentPage: state.currentPage,
         pageHistory: state.pageHistory,
       }),
