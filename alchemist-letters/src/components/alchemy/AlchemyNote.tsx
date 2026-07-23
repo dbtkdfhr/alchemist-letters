@@ -30,7 +30,6 @@ export function AlchemyNote() {
   const renameRecipe = useAlchemyStore((s) => s.renameRecipe)
   const completedChapters = useGameStore((s) => s.completedChapters)
   const currentChapter = useGameStore((s) => s.currentChapter)
-  const sentReplies = useGameStore((s) => s.sentReplies)
   const chapterOutcomes = useGameStore((s) => s.chapterOutcomes)
   const unlockedLetters = useGameStore((s) => s.unlockedLetters)
   const readLetters = useGameStore((s) => s.readLetters)

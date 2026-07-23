@@ -79,33 +79,29 @@ export const useAlchemyStore = create<AlchemyState>()(
           const newAttempted = [...state.attemptedCombos, key]
           const updates: Partial<AlchemyState> = { attemptedCombos: newAttempted }
 
-          // 성공 이상 등급이면 레시피로 저장
-          if (result.grade === 'success' || result.grade === 'perfect') {
+          const sorted = [...state.selectedSlots].sort()
+          const canonical = findRecipeByIngredients(sorted)
+          if (canonical) {
             const recipeId = `recipe_${key}`
-            const newRecipe: RecipeEntry = {
-              recipeId,
-              customName: result.effect,
-              ingredients: [...state.selectedSlots].sort(),
-              result,
-              discoveredAt: Date.now(),
-            }
             updates.discoveredRecipes = {
               ...state.discoveredRecipes,
-              [recipeId]: newRecipe,
+              [recipeId]: {
+                recipeId,
+                customName: result.effect,
+                ingredients: sorted,
+                result,
+                discoveredAt: Date.now(),
+              },
             }
 
-            const sorted = [...state.selectedSlots].sort()
-            const canonical = findRecipeByIngredients(sorted)
-            if (canonical) {
-              const newlyUnlocked = INGREDIENTS
-                .filter((ing) => ing.unlockRecipe === canonical.id)
-                .filter((ing) => !state.unlockedIngredients.includes(ing.id))
-              if (newlyUnlocked.length > 0) {
-                updates.unlockedIngredients = [
-                  ...state.unlockedIngredients,
-                  ...newlyUnlocked.map((ing) => ing.id),
-                ]
-              }
+            const newlyUnlocked = INGREDIENTS
+              .filter((ing) => ing.unlockRecipe === canonical.id)
+              .filter((ing) => !state.unlockedIngredients.includes(ing.id))
+            if (newlyUnlocked.length > 0) {
+              updates.unlockedIngredients = [
+                ...state.unlockedIngredients,
+                ...newlyUnlocked.map((ing) => ing.id),
+              ]
             }
           }
 

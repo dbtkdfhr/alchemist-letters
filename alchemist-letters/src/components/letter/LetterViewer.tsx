@@ -16,6 +16,10 @@ export function LetterViewer() {
   const [visible, setVisible] = useState(true)
   const [animating, setAnimating] = useState(false)
 
+  useEffect(() => {
+    useGameStore.getState().goToPage(0)
+  }, [currentChapter])
+
   const chapter = getChapterByIndex(currentChapter)
   if (!chapter) return null
 
@@ -71,10 +75,6 @@ export function LetterViewer() {
       setView('letterbox')
     }
   }
-
-  useEffect(() => {
-    useGameStore.getState().goToPage(0)
-  }, [currentChapter])
 
   return (
     <LetterPaper>
